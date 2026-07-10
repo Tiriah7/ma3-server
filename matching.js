@@ -13,16 +13,27 @@ function normalizePlate(raw) {
 }
 
 /**
+ * Converts Safaricom TransTime string "YYYYMMDDHHmmss" to epoch milliseconds.
+ * This ensures `date` is always a Long in Firestore, matching app-written records
+ * and allowing Firestore orderBy queries to work without mixed-type issues.
+ */
+function parseTransTime(transTime) {
+    if (!transTime) return Date.now();
+    const s = transTime.toString();
+    return new Date(
+        `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}` +
+        `T${s.slice(8,10)}:${s.slice(10,12)}:${s.slice(12,14)}`
+    ).getTime();
+}
+
+/**
  * Finds the vehicle matching a plate number (from BillRefNumber).
- * Returns the vehicle doc snapshot, or null if no match.
+ * Queries the `matatus` collection (matches Android app collection name).
  */
 async function findVehicleByPlate(rawPlate) {
     const normalized = normalizePlate(rawPlate);
     if (!normalized) return null;
 
-    // We can't query Firestore on a normalized field unless it's stored that way,
-    // so we store a `plateNormalized` field on vehicle docs (see backfill note below)
-    // and query directly against it.
     const snapshot = await db.collection('matatus')
         .where('plateNormalized', '==', normalized)
         .limit(1)
@@ -33,8 +44,8 @@ async function findVehicleByPlate(rawPlate) {
 }
 
 /**
- * Finds the active assignment for a vehicle (links it to its current driver).
- * Assumes assignments have a `status` field, with 'active' marking the current one.
+ * Finds the active assignment for a vehicle.
+ * Status is stored as 'ACTIVE' (uppercase) by the Android app.
  */
 async function findActiveAssignment(vehicleId) {
     const snapshot = await db.collection('assignments')
@@ -81,12 +92,13 @@ async function matchAndCreateCollection(paymentId, payment) {
         driverName: driver.name,
         vehicleId: vehicleDoc.id,
         vehiclePlate: vehicle.plateNumber,
+        plateNumber: vehicle.plateNumber,
         assignmentId: assignmentDoc.id,
         amount: parseFloat(payment.TransAmount),
         source: 'mpesa',
         mpesaPaymentId: paymentId,
         mpesaTransactionId: payment.TransID,
-        date: payment.TransTime,
+        date: parseTransTime(payment.TransTime),   // always epoch ms — no mixed types
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
