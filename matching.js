@@ -22,7 +22,7 @@ function parseTransTime(transTime) {
     const s = transTime.toString();
     return new Date(
         `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}` +
-        `T${s.slice(8,10)}:${s.slice(10,12)}:${s.slice(12,14)}`
+        `T${s.slice(8,10)}:${s.slice(10,12)}:${s.slice(12,14)}+03:00`
     ).getTime();
 }
 
