@@ -78,21 +78,21 @@ async function matchAndCreateCollection(paymentId, payment) {
     }
 
     const assignment = assignmentDoc.data();
-    const driverDoc = await db.collection('drivers').doc(assignment.driverId).get();
+    // const driverDoc = await db.collection('drivers').doc(assignment.driverId).get();
 
-    if (!driverDoc.exists) {
-        return { matched: false, reason: 'driver_not_found' };
-    }
+    // if (!driverDoc.exists) {
+    //     return { matched: false, reason: 'driver_not_found' };
+    // }
 
-    const driver = driverDoc.data();
+    // const driver = driverDoc.data();
 
     const collectionRef = db.collection('collections').doc();
     await collectionRef.set({
         driverId: assignment.driverId,
-        driverName: driver.name,
-        vehicleId: vehicleDoc.id,
-        vehiclePlate: vehicle.plateNumber,
-        plateNumber: vehicle.plateNumber,
+        driverName: assignment.driverName,
+        vehicleId: assignment.vehicleId,
+        vehiclePlate: assignment.vehiclePlate,
+        plateNumber: assignment.plateNumber,
         assignmentId: assignmentDoc.id,
         amount: parseFloat(payment.TransAmount),
         source: 'mpesa',
