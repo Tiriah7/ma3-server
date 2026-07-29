@@ -16,26 +16,33 @@ async function getAccessToken() {
     return response.data.access_token;
 }
 
-async function registerC2BUrls(serverUrl) {
+async function registerC2BUrls(serverUrl, secret) {
     const token = await getAccessToken();
+
+    // Append secret as query param — Safaricom will include it on every callback
+    const confirmationURL = `${serverUrl}/mpesa/confirmation?secret=${secret}`;
+    const validationURL   = `${serverUrl}/mpesa/validation?secret=${secret}`;
 
     const response = await axios.post(
         `${BASE_URL}/mpesa/c2b/v1/registerurl`,
         {
-            ShortCode: process.env.MPESA_SHORTCODE,
-            ResponseType: 'Completed',
-            ConfirmationURL: `${serverUrl}/mpesa/confirmation`,
-            ValidationURL: `${serverUrl}/mpesa/validation`
+            ShortCode:       process.env.MPESA_SHORTCODE,
+            ResponseType:    'Completed',
+            ConfirmationURL: confirmationURL,
+            ValidationURL:   validationURL,
         },
         {
             headers: {
-                Authorization: `Bearer ${token}`,
+                Authorization:  `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         }
     );
 
-    console.log('C2B URLs registered:', response.data);
+    console.log('C2B URLs registered:');
+    console.log('  Confirmation:', confirmationURL);
+    console.log('  Validation:  ', validationURL);
+    console.log('  Response:    ', response.data);
     return response.data;
 }
 
